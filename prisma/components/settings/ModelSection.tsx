@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Bot, Key, Globe, ChevronDown, ChevronUp } from 'lucide-react';
 import { AppConfig, ApiProvider, CustomModel } from '../../types';
+import { MODELS } from '../../config';
 
 interface ModelSectionProps {
   config: AppConfig;
@@ -20,9 +21,25 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
   const handleAddModel = () => {
     if (!newModelName.trim()) return;
 
+    const trimmedName = newModelName.trim();
+
+    // Check if model name already exists in preset models
+    const existingPresetModel = MODELS.find(m => m.value === trimmedName);
+    if (existingPresetModel) {
+      alert(`Model name "${trimmedName}" already exists as a preset model. Please choose a different name.`);
+      return;
+    }
+
+    // Check if model name already exists in custom models
+    const existingCustomModel = customModels.find(m => m.name === trimmedName);
+    if (existingCustomModel) {
+      alert(`Model name "${trimmedName}" already exists. Please choose a different name.`);
+      return;
+    }
+
     const newModel: CustomModel = {
       id: `custom-${Date.now()}`,
-      name: newModelName.trim(),
+      name: trimmedName,
       provider: newModelProvider,
       apiKey: newModelApiKey || undefined,
       baseUrl: newModelBaseUrl || undefined

@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
-import { ApiProvider, AppConfig, CustomModel } from './types';
+import { ApiProvider, CustomModel } from './types';
 
 type AIProviderConfig = {
   provider?: ApiProvider;
@@ -8,39 +8,99 @@ type AIProviderConfig = {
   baseUrl?: string;
 };
 
-/**
- * Find custom model configuration by model name
- */
 export const findCustomModel = (modelName: string, customModels?: CustomModel[]): CustomModel | undefined => {
   return customModels?.find(m => m.name === modelName);
 };
 
+// External API base URLs for production
+const PROVIDER_BASE_URLS: Record<string, string> = {
+  openai: 'https://api.openai.com/v1',
+  deepseek: 'https://api.deepseek.com/v1',
+  anthropic: 'https://api.anthropic.com/v1',
+  xai: 'https://api.x.ai/v1',
+  mistral: 'https://api.mistral.ai/v1',
+  custom: '',
+};
+
+// Check if we're in development mode
+const isDevelopment = import.meta.env?.MODE === 'development' || process.env.NODE_ENV === 'development';
+
+// Store the current custom API target URL
+let currentCustomApiUrl: string | null = null;
+
+// Setup fetch interceptor to add X-Target-URL header for custom API proxy
+const originalFetch = typeof window !== 'undefined' ? window.fetch.bind(window) : null;
+
+if (typeof window !== 'undefined' && originalFetch) {
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    let urlString: string;
+    if (typeof input === 'string') {
+      urlString = input;
+    } else if (input instanceof URL) {
+      urlString = input.toString();
+    } else {
+      urlString = input.url;
+    }
+    
+    // If this is a custom-api request and we have a target URL, add the header
+    if (urlString.includes('/custom-api') && currentCustomApiUrl) {
+      const headers = new Headers(init?.headers);
+      headers.set('X-Target-URL', currentCustomApiUrl);
+      console.log('[Fetch] Adding X-Target-URL header:', currentCustomApiUrl);
+      
+      return originalFetch(input, {
+        ...init,
+        headers,
+      });
+    }
+    
+    return originalFetch(input, init);
+  };
+}
+
 export const getAI = (config?: AIProviderConfig) => {
   const provider = config?.provider || 'google';
-  // Support both Vite env vars (VITE_) and standard env vars for flexibility
   const apiKey = config?.apiKey || (import.meta.env as any).VITE_API_KEY || process.env.API_KEY;
 
   if (provider === 'openai' || provider === 'deepseek' || provider === 'custom' || provider === 'anthropic' || provider === 'xai' || provider === 'mistral') {
     const options: any = {
       apiKey: apiKey,
-      // WARNING: dangerouslyAllowBrowser enables client-side API calls
-      // This is acceptable for local development but NOT production
-      // In production, use a backend proxy to protect API keys
       dangerouslyAllowBrowser: true,
     };
 
     if (config?.baseUrl) {
-      options.baseURL = config.baseUrl;
-    } else if (provider === 'deepseek') {
-      options.baseURL = 'https://api.deepseek.com/v1';
-    } else if (provider === 'anthropic') {
-      options.baseURL = 'https://api.anthropic.com/v1';
-    } else if (provider === 'xai') {
-      options.baseURL = 'https://api.x.ai/v1';
-    } else if (provider === 'mistral') {
-      options.baseURL = 'https://api.mistral.ai/v1';
+      // Custom baseUrl from Configuration UI
+      if (isDevelopment) {
+        // Store the target URL for the fetch interceptor
+        currentCustomApiUrl = config.baseUrl;
+        // Use proxy path
+        options.baseURL = `${window.location.origin}/custom-api`;
+        console.log('[API] Using custom API proxy:', {
+          proxyPath: options.baseURL,
+          targetUrl: currentCustomApiUrl,
+        });
+      } else {
+        // In production, use the URL directly
+        options.baseURL = config.baseUrl;
+      }
+    } else {
+      const providerBaseUrl = PROVIDER_BASE_URLS[provider];
+      if (providerBaseUrl) {
+        if (isDevelopment) {
+          // In development, use proxy to avoid CORS for known providers
+          options.baseURL = `${window.location.origin}/${provider}/v1`;
+        } else {
+          options.baseURL = providerBaseUrl;
+        }
+      }
     }
 
+    console.log('[API] OpenAI client config:', { 
+      provider, 
+      baseURL: options.baseURL, 
+      hasApiKey: !!options.apiKey,
+      customTarget: currentCustomApiUrl,
+    });
     return new OpenAI(options);
   } else {
     const options: any = {

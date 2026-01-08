@@ -99,8 +99,8 @@ export const useDeepThink = () => {
     setProcessStartTime(Date.now());
     setProcessEndTime(null);
     
-    const provider = getAIProvider(model);
     const customModelConfig = findCustomModel(model, config.customModels);
+    const provider = customModelConfig?.provider || getAIProvider(model);
 
     const ai = getAI({
       provider,

@@ -49,7 +49,7 @@ const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSideb
               className="relative bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5 outline-none appearance-none cursor-pointer pl-3 pr-8 shadow-sm font-medium hover:bg-slate-50 transition-colors"
             >
               {availableModels.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+                <option key={`${m.provider}-${m.value}`} value={m.value}>{m.label}</option>
               ))}
             </select>
             <ChevronDown className="absolute right-3 top-3 text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" size={14} />
