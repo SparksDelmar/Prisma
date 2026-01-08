@@ -1,3 +1,4 @@
+
 import React, { useRef, useLayoutEffect, useState, useEffect } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
 import { AppState } from '../types';
@@ -8,9 +9,10 @@ interface InputSectionProps {
   onRun: () => void;
   onStop: () => void;
   appState: AppState;
+  focusTrigger?: number;
 }
 
-const InputSection = ({ query, setQuery, onRun, onStop, appState }: InputSectionProps) => {
+const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }: InputSectionProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isComposing, setIsComposing] = useState(false);
 
@@ -35,11 +37,12 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState }: InputSection
   };
 
   // Focus input on mount and when app becomes idle (e.g. after "New Chat" or completion)
+  // or when explicitly triggered by focusTrigger
   useEffect(() => {
     if (appState === 'idle' && textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [appState]);
+  }, [appState, focusTrigger]);
 
   // useLayoutEffect prevents visual flickering by adjusting height before paint
   useLayoutEffect(() => {

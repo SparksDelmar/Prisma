@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Users, Zap, Brain, Loader2, CheckCircle2, Clock } from 'lucide-react';
 import { AppState, AnalysisResult, ExpertResult } from '../types';
@@ -66,7 +67,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
   const expertsStatus = anyExpertWorking ? 'active' : (allExpertsDone ? 'completed' : 'idle');
 
   return (
-    <div className="relative space-y-4 pt-4">
+    <div className="relative space-y-4 pt-4 w-full">
       
       {/* Global Timer Overlay */}
       <GlobalTimer start={processStartTime} end={processEndTime} appState={appState} />
@@ -115,7 +116,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
             isExpanded={isExpanded}
             onToggle={() => setIsExpanded(!isExpanded)}
           >
-            <div className="grid grid-cols-1 gap-3 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-2">
               {experts.map((expert) => (
                 <ExpertCard key={expert.id} expert={expert} />
               ))}

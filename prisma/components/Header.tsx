@@ -15,7 +15,7 @@ interface HeaderProps {
 
 const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSidebar, onNewChat }: HeaderProps) => {
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md">
       <div className="w-full px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button 

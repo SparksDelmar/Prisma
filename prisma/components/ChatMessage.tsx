@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { User, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import { User, Sparkles, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import ProcessFlow from './ProcessFlow';
 import { ChatMessage } from '../types';
@@ -12,9 +13,17 @@ interface ChatMessageProps {
 const ChatMessageItem = ({ message, isLast }: ChatMessageProps) => {
   const isUser = message.role === 'user';
   const [showThinking, setShowThinking] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Check if there is any thinking data to show
   const hasThinkingData = message.analysis || (message.experts && message.experts.length > 0);
+
+  const handleCopy = () => {
+    if (!message.content) return;
+    navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className={`group w-full text-slate-800 ${isUser ? 'bg-transparent' : 'bg-transparent'}`}>
@@ -36,8 +45,30 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageProps) => {
 
         {/* Content */}
         <div className="relative flex-1 overflow-hidden">
-          <div className="font-semibold text-sm text-slate-900 mb-1">
-            {isUser ? 'You' : 'Prisma'}
+          <div className="flex items-center justify-between mb-1">
+            <div className="font-semibold text-sm text-slate-900">
+              {isUser ? 'You' : 'Prisma'}
+            </div>
+            {message.content && (
+              <button
+                onClick={handleCopy}
+                className={`p-1.5 rounded-md transition-all duration-200 flex items-center gap-1.5
+                  ${copied 
+                    ? 'text-emerald-600 bg-emerald-50' 
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 opacity-0 group-hover:opacity-100 focus:opacity-100'
+                  }`}
+                title="Copy message"
+              >
+                {copied ? (
+                  <>
+                    <Check size={14} />
+                    <span className="text-[10px] font-medium uppercase tracking-wider">Copied</span>
+                  </>
+                ) : (
+                  <Copy size={14} />
+                )}
+              </button>
+            )}
           </div>
 
           {/* Thinking Process Accordion (Only for AI) */}

@@ -2,6 +2,7 @@ import { Type } from "@google/genai";
 import { ModelOption, AnalysisResult, ExpertResult, ReviewResult } from '../../types';
 import { cleanJsonString } from '../../utils';
 import { MANAGER_SYSTEM_PROMPT, MANAGER_REVIEW_SYSTEM_PROMPT } from './prompts';
+import { withRetry } from '../utils/retry';
 
 export const executeManagerAnalysis = async (
   ai: any,
@@ -31,32 +32,36 @@ export const executeManagerAnalysis = async (
     required: ["thought_process", "experts"]
   };
 
-  const analysisResp = await ai.models.generateContent({
-    model: model,
-    contents: `Context:\n${context}\n\nCurrent Query: "${query}"`,
-    config: {
-      systemInstruction: MANAGER_SYSTEM_PROMPT,
-      responseMimeType: "application/json",
-      responseSchema: managerSchema,
-      thinkingConfig: { 
-         includeThoughts: true, 
-         thinkingBudget: budget 
-      }
-    }
-  });
-
-  const rawText = analysisResp.text || '{}';
-  const cleanText = cleanJsonString(rawText);
-  
   try {
+    const analysisResp = await withRetry(() => ai.models.generateContent({
+      model: model,
+      contents: `Context:\n${context}\n\nCurrent Query: "${query}"`,
+      config: {
+        systemInstruction: MANAGER_SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: managerSchema,
+        thinkingConfig: { 
+           includeThoughts: true, 
+           thinkingBudget: budget 
+        }
+      }
+    }));
+
+    const rawText = analysisResp.text || '{}';
+    const cleanText = cleanJsonString(rawText);
+    
     const analysisJson = JSON.parse(cleanText) as AnalysisResult;
     if (!analysisJson.experts || !Array.isArray(analysisJson.experts)) {
        throw new Error("Invalid schema structure");
     }
     return analysisJson;
   } catch (e) {
-    console.error("JSON Parse Error:", e, rawText);
-    return { thought_process: "Direct processing.", experts: [] };
+    console.error("Manager Analysis Error:", e);
+    // Return a fallback so the process doesn't completely die if planning fails
+    return { 
+      thought_process: "Direct processing fallback due to analysis error.", 
+      experts: [] 
+    };
   }
 };
 
@@ -97,28 +102,27 @@ export const executeManagerReview = async (
 
   const content = `User Query: "${query}"\n\nCurrent Expert Outputs:\n${expertOutputs}`;
 
-  const resp = await ai.models.generateContent({
-    model: model,
-    contents: content,
-    config: {
-      systemInstruction: MANAGER_REVIEW_SYSTEM_PROMPT,
-      responseMimeType: "application/json",
-      responseSchema: reviewSchema,
-      thinkingConfig: { 
-         includeThoughts: true, 
-         thinkingBudget: budget 
-      }
-    }
-  });
-
-  const rawText = resp.text || '{}';
-  const cleanText = cleanJsonString(rawText);
-
   try {
+    const resp = await withRetry(() => ai.models.generateContent({
+      model: model,
+      contents: content,
+      config: {
+        systemInstruction: MANAGER_REVIEW_SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: reviewSchema,
+        thinkingConfig: { 
+           includeThoughts: true, 
+           thinkingBudget: budget 
+        }
+      }
+    }));
+
+    const rawText = resp.text || '{}';
+    const cleanText = cleanJsonString(rawText);
     return JSON.parse(cleanText) as ReviewResult;
   } catch (e) {
-    console.error("Review JSON Parse Error:", e);
-    // Fallback: Assume satisfied if JSON fails to avoid infinite loops due to format errors
-    return { satisfied: true, critique: "JSON Error, proceeding to synthesis." };
+    console.error("Review Error:", e);
+    // Fallback: Assume satisfied if JSON or API fails to avoid infinite loops
+    return { satisfied: true, critique: "Processing Error, proceeding to synthesis." };
   }
 };

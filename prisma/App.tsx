@@ -33,7 +33,8 @@ const App = () => {
     handleNewChat,
     handleSelectSession,
     handleDeleteSession,
-    stopDeepThink
+    stopDeepThink,
+    focusTrigger
   } = useAppLogic();
 
   return (
@@ -85,6 +86,7 @@ const App = () => {
                 onRun={handleRun} 
                 onStop={stopDeepThink}
                 appState={appState} 
+                focusTrigger={focusTrigger}
               />
             </div>
           </div>

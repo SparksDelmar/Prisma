@@ -21,6 +21,7 @@ export const useAppLogic = () => {
   // UI State
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [focusTrigger, setFocusTrigger] = useState(0); // Trigger for input focus
 
   // Active Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -149,6 +150,8 @@ export const useAppLogic = () => {
       }
 
       resetDeepThink();
+      // Refocus after completion
+      setFocusTrigger(prev => prev + 1);
     }
   }, [appState, finalOutput, managerAnalysis, experts, synthesisThoughts, resetDeepThink, processStartTime, processEndTime, currentSessionId, messages, selectedModel, createSession, updateSessionMessages]);
 
@@ -181,6 +184,7 @@ export const useAppLogic = () => {
     setMessages([]);
     setQuery('');
     resetDeepThink();
+    setFocusTrigger(prev => prev + 1); // Trigger focus
     if (window.innerWidth < 1024) setIsSidebarOpen(false);
   }, [stopDeepThink, setCurrentSessionId, resetDeepThink]);
 
@@ -188,6 +192,7 @@ export const useAppLogic = () => {
     stopDeepThink();
     resetDeepThink();
     setCurrentSessionId(id);
+    setFocusTrigger(prev => prev + 1); // Trigger focus
     if (window.innerWidth < 1024) setIsSidebarOpen(false);
   }, [stopDeepThink, resetDeepThink, setCurrentSessionId]);
 
@@ -223,6 +228,7 @@ export const useAppLogic = () => {
     handleNewChat,
     handleSelectSession,
     handleDeleteSession,
-    stopDeepThink
+    stopDeepThink,
+    focusTrigger
   };
 };
