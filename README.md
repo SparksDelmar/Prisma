@@ -1,5 +1,5 @@
 
-#  Prisma (v1.0.0)
+#  Prisma
 
 <div align="center">
 
