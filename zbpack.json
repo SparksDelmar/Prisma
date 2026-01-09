@@ -1,8 +1,0 @@
-{
-  "app_dir": "prisma",
-  "cache_dependencies": [
-    "prisma/node_modules"
-  ],
-  "build_command": "cd prisma && npm ci && npm run build",
-  "output_dir": "prisma/dist"
-}
